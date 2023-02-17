@@ -89,7 +89,10 @@ function Set-TargetResource
 
         [ValidateSet("SSL", "TLS", "NONE")]
         [System.String]
-        $EmailSettingsEncryptionMethod = "NONE"
+        $EmailSettingsEncryptionMethod = "NONE",
+
+        [System.Boolean]
+        $WaitForPortalRestart = $False
     )
 
 	[System.Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null
@@ -155,8 +158,13 @@ function Set-TargetResource
         } catch {
             Write-Verbose "Error setting Portal System Properties :- $_ .Props - $sysProps"
         }
-        Write-Verbose "Updated Portal System Properties. Waiting upto 6 minutes for portaladmin endpoint 'https://$($PortalFQDN):7443/arcgis/portaladmin/' to come back up"
-        Wait-ForUrl -Url "https://$($PortalFQDN):7443/arcgis/portaladmin/" -MaxWaitTimeInSeconds 360 -HttpMethod 'GET' -Verbose
+        Write-Verbose "Updated Portal System Properties."
+        if($WaitForPortalRestart){
+            Write-Verbose "Waiting 5 minutes for web server to apply changes before polling for endpoint being available" 
+            Start-Sleep -Seconds 300 # Add a 6 minute wait to allow the web server to go down
+        }
+        Write-Verbose "Waiting upto 6 minutes for portaladmin endpoint 'https://$($PortalFQDN):7443/arcgis/portaladmin/' to come back up"
+        Wait-ForUrl "https://$($PortalFQDN):7443/arcgis/portaladmin/healthCheck/?f=json" -MaxWaitTimeInSeconds 360 -HttpMethod 'GET' -Verbose
         Write-Verbose "Finished waiting for portaladmin endpoint 'https://$($PortalFQDN):7443/arcgis/portaladmin/' to come back up"    
     }
 
@@ -313,7 +321,7 @@ function Set-TargetResource
         Set-PortalSecurityConfig -PortalHostName $PortalFQDN -Token $token.token -SecurityParameters (ConvertTo-Json $securityConfig -Depth 10) -Referer $Referer -Verbose
     }
 
-    if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8) -or $Version -eq "10.8.1"){
+    if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8) -or $Info.Version -eq "10.8.1"){
         $UpdateEmailSettingsFlag = $False
         try{
             $PortalEmailSettings = Get-PortalEmailSettings -PortalHostName $PortalFQDN -Token $token.token -Referer $Referer
@@ -337,7 +345,7 @@ function Set-TargetResource
 
         if($UpdateEmailSettingsFlag){
             Write-Verbose "Updating Portal Email Settings"
-            Update-PortalEmailSettings -SMTPServerAddress $EmailSettingsSMTPServerAddress -From $EmailSettingsFrom -Label $EmailSettingsLabel -AuthenticationRequired $EmailSettingsAuthenticationRequired -Credential $EmailSettingsCredential -SMTPPort $EmailSettingsSMTPPort -EncryptionMethod $EmailSettingsEncryptionMethod -Token $token.token -Referer $Referer -Verbose
+            Update-PortalEmailSettings -PortalHostName $PortalFQDN -SMTPServerAddress $EmailSettingsSMTPServerAddress -From $EmailSettingsFrom -Label $EmailSettingsLabel -AuthenticationRequired $EmailSettingsAuthenticationRequired -Credential $EmailSettingsCredential -SMTPPort $EmailSettingsSMTPPort -EncryptionMethod $EmailSettingsEncryptionMethod -Token $token.token -Referer $Referer -Verbose
         }
     }
 }
@@ -413,7 +421,10 @@ function Test-TargetResource
 
         [ValidateSet("SSL", "TLS", "NONE")]
         [System.String]
-        $EmailSettingsEncryptionMethod = "NONE"
+        $EmailSettingsEncryptionMethod = "NONE",
+
+        [System.Boolean]
+        $WaitForPortalRestart = $False
     )
 
 	[System.Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null
@@ -581,7 +592,7 @@ function Test-TargetResource
         }
     }
 
-    if($result -and ($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8) -or $Version -eq "10.8.1")){
+    if($result -and ($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8) -or $Info.Version -eq "10.8.1")){
         Write-Verbose "Checking Portal Email settings."
         try{
             $PortalEmailSettings = Get-PortalEmailSettings -PortalHostName $PortalFQDN -Token $token.token -Referer $Referer
@@ -710,6 +721,8 @@ function Set-PortalUserStoreConfig {
             "user": "' + $($ADServiceUser.UserName.Replace("\","\\")) +'",
             "userFullnameAttribute": "cn",
             "userEmailAttribute": "mail",
+            "userGivenNameAttribute": "givenName",
+            "userSurnameAttribute": "sn",
             "caseSensitive": "false"
         }
     }'
