@@ -394,55 +394,100 @@
                 }
                 {($_ -eq "ServerWebAdaptor") -or ($_ -eq "PortalWebAdaptor")}
                 {
-                    $PortalWebAdaptorSkip = $False
-                    if(($Node.Role -icontains 'ServerWebAdaptor') -and ($Node.Role -icontains 'PortalWebAdaptor'))
-                    {
-                        if($NodeRole -ieq "PortalWebAdaptor")
+                    if($ConfigurationData.ConfigData.WebAdaptor.Type -eq "Java"){
+                        $PortalWebAdaptorSkip = $False
+						if(($Node.Role -icontains 'ServerWebAdaptor') -and ($Node.Role -icontains 'PortalWebAdaptor'))
+						{
+							if($NodeRole -ieq "PortalWebAdaptor")
+							{
+								$PortalWebAdaptorSkip = $True
+							}
+						}
+						
+						if(-not($PortalWebAdaptorSkip))
+						{
+							if(($Node.Role -icontains 'PortalWebAdaptor') -and $ConfigurationData.ConfigData.PortalContext)
+							{
+								$PortalWAArguments = "/qn ACCEPTEULA=YES InstallDir=$($ConfigurationData.ConfigData.WebAdaptor.Installer.InstallDir)"
+								ArcGIS_Install WebAdaptorJavaInstallPortal
+								{ 
+									Name = "PortalWebAdaptorJava"
+									Version = $ConfigurationData.ConfigData.Version
+									Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
+									Arguments = $PortalWAArguments
+									WebAdaptorContext = $ConfigurationData.ConfigData.PortalContext
+                                    TomcatDir = if($ConfigurationData.ConfigData.WebAdaptor.TomcatDir){$ConfigurationData.ConfigData.WebAdaptor.TomcatDir}else{$null}
+									Ensure = "Present"
+								} 
+							}
+
+							if(($Node.Role -icontains 'ServerWebAdaptor') -and $Node.ServerContext)
+							{
+								$ServerWAArguments = "/qn ACCEPTEULA=YES InstallDir=$($ConfigurationData.ConfigData.WebAdaptor.Installer.InstallDir)"
+								ArcGIS_Install WebAdaptorJavaInstallServer
+								{ 
+									Name = "ServerWebAdaptorJava"
+									Version = $ConfigurationData.ConfigData.Version
+									Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
+									Arguments = $ServerWAArguments
+									WebAdaptorContext = $Node.ServerContext
+                                    TomcatDir = if($ConfigurationData.ConfigData.WebAdaptor.TomcatDir){$ConfigurationData.ConfigData.WebAdaptor.TomcatDir}else{$null}
+									Ensure = "Present"
+								} 
+							}
+						}
+                    }else{
+                        $PortalWebAdaptorSkip = $False
+                        if(($Node.Role -icontains 'ServerWebAdaptor') -and ($Node.Role -icontains 'PortalWebAdaptor'))
                         {
-                            $PortalWebAdaptorSkip = $True
+                            if($NodeRole -ieq "PortalWebAdaptor")
+                            {
+                                $PortalWebAdaptorSkip = $True
+                            }
+                        }
+                        
+                        if(-not($PortalWebAdaptorSkip))
+                        {
+                            $VersionArray = $ConfigurationData.ConfigData.Version.Split(".")
+                            $WebsiteId = if($ConfigurationData.ConfigData.WebAdaptor.WebSiteId){ $ConfigurationData.ConfigData.WebAdaptor.WebSiteId }else{ 1 } 
+                            if(($Node.Role -icontains 'PortalWebAdaptor') -and $ConfigurationData.ConfigData.PortalContext)
+                            {
+                                $PortalWAArguments = "/qn ACCEPTEULA=YES VDIRNAME=$($ConfigurationData.ConfigData.PortalContext) WEBSITE_ID=$($WebSiteId)"
+                                if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8)){
+                                    $PortalWAArguments += " CONFIGUREIIS=TRUE"
+                                }
+                                ArcGIS_Install WebAdaptorInstallPortal
+                                { 
+                                    Name = "PortalWebAdaptor"
+                                    Version = $ConfigurationData.ConfigData.Version
+                                    Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
+                                    Arguments = $PortalWAArguments
+                                    WebAdaptorContext = $ConfigurationData.ConfigData.PortalContext
+                                    EnableMSILogging = $EnableMSILogging
+                                    Ensure = "Present"
+                                }
+                            }
+
+                            if(($Node.Role -icontains 'ServerWebAdaptor') -and $Node.ServerContext)
+                            {
+                                $ServerWAArguments = "/qn ACCEPTEULA=YES VDIRNAME=$($Node.ServerContext) WEBSITE_ID=$($WebSiteId)"
+                                if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8)){
+                                    $ServerWAArguments += " CONFIGUREIIS=TRUE"
+                                }
+                                ArcGIS_Install WebAdaptorInstallServer
+                                { 
+                                    Name = "ServerWebAdaptor"
+                                    Version = $ConfigurationData.ConfigData.Version
+                                    Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
+                                    Arguments = $ServerWAArguments
+                                    WebAdaptorContext = $Node.ServerContext
+                                    EnableMSILogging = $EnableMSILogging
+                                    Ensure = "Present"
+                                }
+                            }
                         }
                     }
                     
-                    if(-not($PortalWebAdaptorSkip))
-                    {
-                        $VersionArray = $ConfigurationData.ConfigData.Version.Split(".")
-                        $WebsiteId = if($ConfigurationData.ConfigData.WebAdaptor.WebSiteId){ $ConfigurationData.ConfigData.WebAdaptor.WebSiteId }else{ 1 } 
-                        if(($Node.Role -icontains 'PortalWebAdaptor') -and $ConfigurationData.ConfigData.PortalContext)
-                        {
-                            $PortalWAArguments = "/qn ACCEPTEULA=YES VDIRNAME=$($ConfigurationData.ConfigData.PortalContext) WEBSITE_ID=$($WebSiteId)"
-                            if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8)){
-                                $PortalWAArguments += " CONFIGUREIIS=TRUE"
-                            }
-                            ArcGIS_Install WebAdaptorInstallPortal
-                            { 
-                                Name = "PortalWebAdaptor"
-                                Version = $ConfigurationData.ConfigData.Version
-                                Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
-                                Arguments = $PortalWAArguments
-                                WebAdaptorContext = $ConfigurationData.ConfigData.PortalContext
-                                EnableMSILogging = $EnableMSILogging
-                                Ensure = "Present"
-                            }
-                        }
-
-                        if(($Node.Role -icontains 'ServerWebAdaptor') -and $Node.ServerContext)
-                        {
-                            $ServerWAArguments = "/qn ACCEPTEULA=YES VDIRNAME=$($Node.ServerContext) WEBSITE_ID=$($WebSiteId)"
-                            if($VersionArray[0] -eq 11 -or ($VersionArray[0] -eq 10 -and $VersionArray[1] -gt 8)){
-                                $ServerWAArguments += " CONFIGUREIIS=TRUE"
-                            }
-                            ArcGIS_Install WebAdaptorInstallServer
-                            { 
-                                Name = "ServerWebAdaptor"
-                                Version = $ConfigurationData.ConfigData.Version
-                                Path = $ConfigurationData.ConfigData.WebAdaptor.Installer.Path
-                                Arguments = $ServerWAArguments
-                                WebAdaptorContext = $Node.ServerContext
-                                EnableMSILogging = $EnableMSILogging
-                                Ensure = "Present"
-                            }
-                        }
-                    }
 
                     if ($ConfigurationData.ConfigData.WebAdaptor.Installer.PatchesDir -and -not($PortalWebAdaptorSkip)) {
                         ArcGIS_InstallPatch WebAdaptorInstallPatch
