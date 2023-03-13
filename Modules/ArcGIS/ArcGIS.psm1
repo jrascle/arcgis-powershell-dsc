@@ -1393,6 +1393,7 @@ function Invoke-ArcGISConfiguration
 
                     if(($JobFlag[$JobFlag.Count - 1] -eq $True) -and $WebAdaptorCheck){
                         $JobFlag = $False
+                        $Type = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type }else{ "IIS" }
                         $WebAdaptorArgs = @{
                             ConfigurationData           = $WebAdaptorCD
                             ServerPrimarySiteAdminCredential = $ServerPrimarySiteAdminCredential
@@ -1401,12 +1402,19 @@ function Invoke-ArcGISConfiguration
                             PrimaryPortalMachine        = $PrimaryPortalMachine.NodeName
                             WebSiteId                   = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.WebSiteId){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.WebSiteId }else{ 1 }
                             OverrideHTTPSBinding        = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.OverrideHTTPSBinding){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.OverrideHTTPSBinding }else{ $True } 
+                            WebAdaptorType = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type }else{ "IIS" }
+                            TomcatDir = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.TomcatDir){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.TomcatDir }else{ $null }
+                            InstallDir = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Installer.InstallDir){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Installer.InstallDir }else{ $null }
+                        
                         }
                         if($ServerCheck){
                             $WebAdaptorArgs["ServerRole"] = $ConfigurationParamsHashtable.ConfigData.ServerRole
                         }
-
-                        $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptor" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        if($Type -ieq "Java"){
+                            $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptorJava" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential  -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        }else{
+                            $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptor" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        }
                     }
                     
                     if(($JobFlag[$JobFlag.Count - 1] -eq $True) -and $RelationalDataStoreCheck){

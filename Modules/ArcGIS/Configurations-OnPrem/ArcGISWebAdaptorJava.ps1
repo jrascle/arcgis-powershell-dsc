@@ -1,4 +1,4 @@
-﻿Configuration ArcGISWebAdaptor
+Configuration ArcGISWebAdaptorJava
 {
     param(
         [System.Management.Automation.PSCredential]
@@ -28,7 +28,7 @@
 
         [ValidateSet("Java","IIS")]
         [System.String]
-        $WebAdaptorType,
+        $WebAdaptorType,    
 
         [System.String]
         $TomcatDir,
@@ -40,8 +40,7 @@
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -ModuleName ArcGIS -ModuleVersion 4.0.2
     Import-DscResource -Name ArcGIS_xFirewall
-    Import-DscResource -Name ArcGIS_IIS_TLS
-    Import-DscResource -Name ArcGIS_WebAdaptor
+    Import-DscResource -Name ArcGIS_WebAdaptorJava
 
     Node $AllNodes.NodeName
     {
@@ -58,9 +57,9 @@
 
         ArcGIS_xFirewall "WebAdaptorFirewallRules$($Node.NodeName)"
         {
-            Name                  = "IIS-ARR" 
-            DisplayName           = "IIS-ARR" 
-            DisplayGroup          = "IIS-ARR" 
+            Name                  = "WebServer-RV" 
+            DisplayName           = "WebServer-RV" 
+            DisplayGroup          = "WebServer-RV" 
             Ensure                = 'Present'  
             Access                = "Allow" 
             State                 = "Enabled" 
@@ -70,41 +69,8 @@
         }
         $Depends += "[ArcGIS_xFirewall]WebAdaptorFirewallRules$($Node.NodeName)"
 
-        Service "StartW3SVC$($Node.NodeName)"
-        {
-            Name = 'W3SVC'
-            StartupType = 'Automatic'
-            Ensure = 'Present'
-            State = 'Running'
-            DependsOn = $Depends
-        }
-        $Depends += "[Service]StartW3SVC$($Node.NodeName)"
-
-        if($OverrideHTTPSBinding){
-            if($Node.SSLCertificate){
-                ArcGIS_IIS_TLS "WebAdaptorCertificateInstall$($Node.NodeName)"
-                {
-                    WebSiteId               = $WebSiteId
-                    ExternalDNSName         = $Node.SSLCertificate.CName
-                    Ensure                  = 'Present'
-                    CertificateFileLocation = $Node.SSLCertificate.Path
-                    CertificatePassword     = $Node.SSLCertificate.Password
-                    DependsOn               = $Depends
-                }
-            }else{
-                ArcGIS_IIS_TLS "WebAdaptorCertificateInstall$($Node.NodeName)"
-                {
-                    WebSiteId       = $WebSiteId
-                    ExternalDNSName = $MachineFQDN 
-                    Ensure          = 'Present'
-                    DependsOn       = $Depends
-                }
-            }
-            $Depends += "[ArcGIS_IIS_TLS]WebAdaptorCertificateInstall$($Node.NodeName)"
-        }
-
         if($Node.IsServerWebAdaptorEnabled -and $PrimaryServerMachine){
-            ArcGIS_WebAdaptor "ConfigureServerWebAdaptor$($Node.NodeName)"
+            ArcGIS_WebAdaptorJava "ConfigureServerWebAdaptor$($Node.NodeName)"
             {
                 Ensure              = "Present"
                 Component           = if($ServerRole -ieq "NotebookServer"){ 'NotebookServer' }elseif($ServerRole -ieq "MissionServer"){ 'MissionServer' }else{ 'Server' }
@@ -114,13 +80,14 @@
                 OverwriteFlag       = $False
                 SiteAdministrator   = $ServerPrimarySiteAdminCredential
                 AdminAccessEnabled  = if($ServerRole -ieq "NotebookServer" -or $ServerRole -ieq "MissionServer"){ $true }else{ if($Node.AdminAccessEnabled) { $true } else { $false } }
+                TomcatDir           = $TomcatDir
                 DependsOn           = $Depends
             }
-            $Depends += "[ArcGIS_WebAdaptor]ConfigureServerWebAdaptor$($Node.NodeName)"
+            $Depends += "[ArcGIS_WebAdaptorJava]ConfigureServerWebAdaptor$($Node.NodeName)"
         }
 
         if($Node.IsPortalWebAdaptorEnabled -and $PrimaryPortalMachine){
-            ArcGIS_WebAdaptor "ConfigurePortalWebAdaptor$($Node.NodeName)"
+            ArcGIS_WebAdaptorJava "ConfigurePortalWebAdaptor$($Node.NodeName)"
             {
                 Ensure              = "Present"
                 Component           = 'Portal'
@@ -129,6 +96,7 @@
                 Context             = $Node.PortalContext
                 OverwriteFlag       = $False
                 SiteAdministrator   = $PortalAdministratorCredential
+                TomcatDir           = $TomcatDir
                 DependsOn           = $Depends
             }
         }
