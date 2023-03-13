@@ -1402,6 +1402,10 @@ function Invoke-ArcGISConfiguration
                             PrimaryPortalMachine        = $PrimaryPortalMachine.NodeName
                             WebSiteId                   = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.WebSiteId){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.WebSiteId }else{ 1 }
                             OverrideHTTPSBinding        = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.OverrideHTTPSBinding){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.OverrideHTTPSBinding }else{ $True } 
+                            WebAdaptorType = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type }else{ "IIS" }
+                            TomcatDir = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.TomcatDir){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.TomcatDir }else{ $null }
+                            InstallDir = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Installer.InstallDir){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Installer.InstallDir }else{ $null }
+                        
                         }
                         if($ServerCheck){
                             $WebAdaptorArgs["ServerRole"] = $ConfigurationParamsHashtable.ConfigData.ServerRole

@@ -1,3 +1,10 @@
+$modulePath = Join-Path -Path (Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent) -ChildPath 'Modules'
+
+# Import the ArcGIS Common Modules
+Import-Module -Name (Join-Path -Path $modulePath `
+        -ChildPath (Join-Path -Path 'ArcGIS.Common' `
+            -ChildPath 'ArcGIS.Common.psm1'))
+
 <#
     .SYNOPSIS
         Configures a WebAdaptor
@@ -63,7 +70,6 @@ function Get-TargetResource
         [System.String]
         $TomcatDir
     )
-    Import-Module $PSScriptRoot\..\..\ArcGISUtility.psm1 -Verbose:$false
 
     $null 
 }
@@ -107,7 +113,6 @@ function Set-TargetResource
         $TomcatDir
     )
 
-    Import-Module $PSScriptRoot\..\..\ArcGISUtility.psm1 -Verbose:$false
 
     if($Ensure -ieq 'Present') {
         $WAInstalls = (Get-ArcGISProductDetails -ProductName 'ArcGIS Web Adaptor')
@@ -235,8 +240,6 @@ function Test-TargetResource
         $TomcatDir
     )
     [System.Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null
-    Import-Module $PSScriptRoot\..\..\ArcGISUtility.psm1 -Verbose:$false
-
     $WAInstalls = (Get-ArcGISProductDetails -ProductName 'ArcGIS Web Adaptor')
     $result = $false
     foreach($wa in $WAInstalls){
@@ -250,7 +253,8 @@ function Test-TargetResource
                     $WAConfigPath = "C:\Users\$($UserTomcat)\.webadaptor\$($Context)\webadaptor.config"
                     [xml]$WAConfig = Get-Content $WAConfigPath
                 }else{
-                    $result = $true
+                    Write-Verbose "No configuration find for webadaptor $($Context)"
+                    $result = $false
                     break
                 }
             }

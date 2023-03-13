@@ -22,9 +22,13 @@ Configuration ArcGISWebAdaptorJava
         [System.Int32]
 		$WebSiteId = 1,
 
+        [Parameter(Mandatory=$False)]
+        [System.String]
+        $OverrideHTTPSBinding = $True,
+
         [ValidateSet("Java","IIS")]
         [System.String]
-        $WebAdaptorType,
+        $WebAdaptorType,    
 
         [System.String]
         $TomcatDir,

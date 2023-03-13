@@ -22,13 +22,19 @@
         [System.Int32]
 		$WebSiteId = 1,
 
+        [Parameter(Mandatory=$False)]
+        [System.String]
+        $OverrideHTTPSBinding = $True,
+
         [ValidateSet("Java","IIS")]
         [System.String]
         $WebAdaptorType,
 
-        [Parameter(Mandatory=$False)]
         [System.String]
-        $OverrideHTTPSBinding = $True
+        $TomcatDir,
+
+        [System.String]
+        $InstallDir
     )
 
     Import-DscResource -ModuleName PSDesiredStateConfiguration
