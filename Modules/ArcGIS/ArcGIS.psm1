@@ -1393,6 +1393,7 @@ function Invoke-ArcGISConfiguration
 
                     if(($JobFlag[$JobFlag.Count - 1] -eq $True) -and $WebAdaptorCheck){
                         $JobFlag = $False
+                        $Type = if($ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type){ $ConfigurationParamsHashtable.ConfigData.WebAdaptor.Type }else{ "IIS" }
                         $WebAdaptorArgs = @{
                             ConfigurationData           = $WebAdaptorCD
                             ServerPrimarySiteAdminCredential = $ServerPrimarySiteAdminCredential
