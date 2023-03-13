@@ -22,6 +22,8 @@ Import-Module -Name (Join-Path -Path $modulePath `
         Additional Command Line Arguments required by the installer to complete intallation of the give component successfully.
     .PARAMETER WebAdaptorContext
         Context with which the Web Adaptor Needs to be Installed.
+    .PARAMETER TomcatDir
+        Install path of Apache Tomcat.
 #>
 
 function Get-TargetResource
@@ -56,6 +58,9 @@ function Get-TargetResource
 
 		[System.String]
         $WebAdaptorContext,
+
+        [System.String]
+        $TomcatDir,
 
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
@@ -114,6 +119,10 @@ function Set-TargetResource
 		[System.String]
         $WebAdaptorContext,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $TomcatDir,
+
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
         $ServiceCredential,
@@ -136,7 +145,7 @@ function Set-TargetResource
 	)
     
     $ComponentName = $Name
-    if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor'){
+    if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor' -or $Name -ieq 'ServerWebAdaptorJava' -or $Name -ieq 'PortalWebAdaptorJava'){
         $ComponentName = "WebAdaptor"
     }
 
@@ -176,7 +185,7 @@ function Set-TargetResource
             $ProdIdObject = if(-not($ProductId)){ Get-ComponentCode -ComponentName $ComponentName -Version $Version }else{ $ProductId }
             $ProdId = $ProductId
             if(-not($ProductId)){
-                if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor'){
+                if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor' -or $Name -ieq 'ServerWebAdaptorJava' -or $Name -ieq 'PortalWebAdaptorJava'){
                     $ProdId =  $ProdIdObject[0] 
                 }else{
                     $ProdId = $ProdIdObject
@@ -336,12 +345,16 @@ function Set-TargetResource
     }
     elseif($Ensure -eq 'Absent') {
         $ProdIdObject = if(-not($ProductId)){ Get-ComponentCode -ComponentName $ComponentName -Version $Version }else{ $ProductId }
-        if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor'){
+        if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor' -or $Name -ieq 'PortalWebAdaptorJava' -or $Name -ieq 'ServerWebAdaptorJava'){
             $WAInstalls = (Get-ArcGISProductDetails -ProductName 'ArcGIS Web Adaptor')
             $prodIdSetFlag = $False
             foreach($wa in $WAInstalls){
 				$WAProdId = $wa.IdentifyingNumber.TrimStart("{").TrimEnd("}")
-				if($wa.InstallLocation -match "\\$($WebAdaptorContext)\\" -and ($ProdIdObject -icontains $WAProdId)){
+				if($wa.Name -like "*(Java PLatform)*" -and ($ProdIdObject -icontains $WAProdId)){
+					$ProdIdObject = $WAProdId 
+                    $prodIdSetFlag = $True
+					break
+				}elseif($wa.InstallLocation -match "\\$($WebAdaptorContext)\\" -and ($ProdIdObject -icontains $WAProdId)){
                     $ProdIdObject = $WAProdId 
                     $prodIdSetFlag = $True
 					break
@@ -377,6 +390,17 @@ function Set-TargetResource
             }
             $IISWebSiteName = (Get-Website | Where-Object {$_.ID -eq $WebSiteId}).Name
             Remove-WebConfigurationLocation -Name "$($IISWebSiteName)/$($WebAdaptorContext)"
+        }
+
+        if($Name -ieq 'ServerWebAdaptorJava' -or $Name -ieq 'PortalWebAdaptorJava'){
+            Write-Verbose "Delete folder and .war in Tomcat"
+            if(-not($TomcatDir)){
+                throw "Tomcat Directory not specified in ConfigFile."
+            }else{
+                if (Test-Path "$($TomcatDir)\webapps\$($WebAdaptorContext).war"){
+                    Remove-Item "$($TomcatDir)\webapps\$($WebAdaptorContext).war"
+                }
+            }
         }
 
         if($ComponentName -ieq "Server"){
@@ -429,6 +453,10 @@ function Test-TargetResource
         [parameter(Mandatory = $false)]
 		[System.String]
         $WebAdaptorContext,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $TomcatDir,
 
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
@@ -508,14 +536,17 @@ function Test-ProductInstall
         $trueName = Get-ArcGISProductName -Name $Name -Version $Version
         
         $InstallObject = (Get-ArcGISProductDetails -ProductName $trueName)
-        if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor'){
+        if($Name -ieq 'ServerWebAdaptor' -or $Name -ieq 'PortalWebAdaptor' -or $Name -ieq 'PortalWebAdaptorJava' -or $Name -ieq 'ServerWebAdaptorJava'){
             if($InstallObject.Length -gt 1){
                 Write-Verbose "Multiple Instances of Web Adaptor are already installed"
             }
             $result = $false
             Write-Verbose "Checking if any of the installed Web Adaptor are installed with context $($WebAdaptorContext)"
             foreach($wa in $InstallObject){
-                if($wa.InstallLocation -match "\\$($WebAdaptorContext)\\"){
+                if($wa.Name -like "*(Java PLatform)*"){
+                    $result = Test-Install -Name "WebAdaptor" -Version $Version -ProductId $wa.IdentifyingNumber.TrimStart("{").TrimEnd("}") -Verbose
+                    break
+                }elseif($wa.InstallLocation -match "\\$($WebAdaptorContext)\\"){
                     $result = Test-Install -Name 'WebAdaptor' -Version $Version -ProductId $wa.IdentifyingNumber.TrimStart("{").TrimEnd("}") -Verbose
 					break
                 }else{

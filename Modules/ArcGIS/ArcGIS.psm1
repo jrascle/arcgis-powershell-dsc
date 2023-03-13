@@ -1405,8 +1405,11 @@ function Invoke-ArcGISConfiguration
                         if($ServerCheck){
                             $WebAdaptorArgs["ServerRole"] = $ConfigurationParamsHashtable.ConfigData.ServerRole
                         }
-
-                        $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptor" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        if($Type -ieq "Java"){
+                            $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptorJava" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential  -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        }else{
+                            $JobFlag = Invoke-DSCJob -ConfigurationName "ArcGISWebAdaptor" -ConfigurationFolderPath "Configurations-OnPrem" -Arguments $WebAdaptorArgs -Credential $Credential -UseWinRMSSL $UseWinRMSSL -DebugMode $DebugMode
+                        }
                     }
                     
                     if(($JobFlag[$JobFlag.Count - 1] -eq $True) -and $RelationalDataStoreCheck){
