@@ -140,6 +140,9 @@ function Set-TargetResource
 		[System.String]
         $WebAdaptorContext,
 
+        [System.String]
+        $TomcatDir,
+
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
         $ServiceCredential,
@@ -452,6 +455,9 @@ function Test-TargetResource
         [parameter(Mandatory = $false)]
 		[System.String]
         $WebAdaptorContext,
+
+        [System.String]
+        $TomcatDir,
 
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
