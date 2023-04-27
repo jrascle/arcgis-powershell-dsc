@@ -64,6 +64,7 @@ function Get-TargetResource
 		[System.String]
         $WebAdaptorContext,
 
+        [parameter(Mandatory = $false)]
         [System.String]
         $TomcatDir,
 
@@ -140,8 +141,21 @@ function Set-TargetResource
 		[System.String]
         $WebAdaptorContext,
 
+        [parameter(Mandatory = $false)]
         [System.String]
         $TomcatDir,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $WebAdaptorDotnetHostingBundlePath,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $WebAdaptorWebDeployPath,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $ProDotnetDesktopRuntimePath,
 
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
@@ -456,8 +470,21 @@ function Test-TargetResource
 		[System.String]
         $WebAdaptorContext,
 
+        [parameter(Mandatory = $false)]
         [System.String]
         $TomcatDir,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $WebAdaptorDotnetHostingBundlePath,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $WebAdaptorWebDeployPath,
+
+        [parameter(Mandatory = $false)]
+		[System.String]
+        $ProDotnetDesktopRuntimePath,
 
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]
